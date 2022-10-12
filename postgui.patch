@@ -1,0 +1,38 @@
+diff --git a/scripts/CREATE ROLE.sql b/scripts/CREATE ROLE.sql
+index f09d846..1e72861 100755
+--- a/scripts/CREATE ROLE.sql	
++++ b/scripts/CREATE ROLE.sql	
+@@ -6,7 +6,7 @@
+ 
+ -- Allows for read only access
+ CREATE ROLE readuser;
+-GRANT CONNECT ON DATABASE <<<<DATABASE_NAME>>>> TO readuser;
++GRANT CONNECT ON DATABASE dvdrental TO readuser;
+ GRANT USAGE ON SCHEMA public TO readuser;
+ GRANT SELECT ON ALL TABLES IN SCHEMA public TO readuser;
+ 
+@@ -15,9 +15,9 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO readuser;
+ -- REVOKE USAGE ON SCHEMA public FROM readuser;
+ -- REVOKE SELECT ON ALL TABLES IN SCHEMA public FROM readuser;
+ 
+-# Can do everything PostgREST can
++-- Can do everything PostgREST can
+ CREATE ROLE edituser;
+-GRANT CONNECT ON DATABASE <<<<DATABASE_NAME>>>> TO edituser;
++GRANT CONNECT ON DATABASE dvdrental TO edituser;
+ GRANT USAGE ON SCHEMA public TO edituser;
+ GRANT SELECT ON ALL TABLES IN SCHEMA public to edituser;
+ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public to edituser;
+diff --git a/src/data/config.json b/src/data/config.json
+index b5cb26a..91c4c02 100644
+--- a/src/data/config.json
++++ b/src/data/config.json
+@@ -2,7 +2,7 @@
+   "databases": [
+     {
+       "title": "DVD Rentals",
+-      "url": "http://localhost:3001",
++      "url": "http://postgrest.pankov.eu",
+       "publicDbAcessType": "read",
+       "foreignKeySearch": true,
+       "primaryKeyFunction": true,
