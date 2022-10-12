@@ -1,0 +1,23 @@
+# Base build image
+FROM node:14.0 as build
+
+# Set working directory
+WORKDIR /app
+
+# Copy package.json & package-lock.json
+COPY ./PostGUI/package.json ./PostGUI/package-lock.json ./
+
+# Run npm ci
+RUN npm ci
+
+# Copy project
+COPY ./PostGUI ./
+
+# Run npm build
+RUN npm run build
+
+# Base nginx image
+FROM nginx:latest
+
+# Copy build files
+COPY --from=build /app/build /usr/share/nginx/html

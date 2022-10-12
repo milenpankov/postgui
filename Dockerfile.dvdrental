@@ -1,0 +1,27 @@
+# Base image
+FROM postgres:11
+
+# Install needed system tools
+RUN apt-get update && apt-get install -y --no-install-recommends git curl unzip ca-certificates
+
+# Install pgjwt extension
+RUN git clone https://github.com/michelp/pgjwt.git 
+RUN cp pgjwt/* /usr/share/postgresql/11/extension/
+
+# Get dvdrental sample database
+RUN curl -o dvdrental.zip https://www.postgresqltutorial.com/wp-content/uploads/2019/05/dvdrental.zip
+RUN unzip dvdrental.zip -d docker-entrypoint-initdb.d
+
+# Copy PostGUI db scripts
+COPY PostGUI/scripts ./scripts
+
+# Copy everything in postgresql entrypoint dir
+RUN cp scripts/CREATE\ FUNCTION.sql docker-entrypoint-initdb.d/z01-postgui-create-function.sql
+RUN cp scripts/CREATE\ ROLE.sql docker-entrypoint-initdb.d/z02-postgui-create-role.sql
+RUN cp scripts/CREATE\ TABLE\ change_log.sql docker-entrypoint-initdb.d/z03-postgui-create-table.sql
+RUN cp scripts/Authentication.sql docker-entrypoint-initdb.d/z03-postgui-create-auth.sql
+RUN echo pg_restore -U postgres -d dvdrental -v \"docker-entrypoint-initdb.d/dvdrental.tar\" > docker-entrypoint-initdb.d/a01-create-dvdrental-db.sh
+RUN chmod +x docker-entrypoint-initdb.d/a01-create-dvdrental-db.sh
+
+# Remove stale file & directories
+RUN rm -rf pgjwt dvdrental.zip scripts
