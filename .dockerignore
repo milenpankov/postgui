@@ -1,0 +1,9 @@
+.git
+.gitignore
+.dockerignore
+PostGUI@tmp
+PostGUI@tmp/*
+helm
+helm/*
+helm@tmp
+helm@tmp/*
