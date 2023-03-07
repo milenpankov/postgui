@@ -46,7 +46,7 @@ ingress:
   annotations: 
     kubernetes.io/ingress.class: nginx
   hosts:
-    - host: postgui.pankov.eu
+    - host: localhost
       paths:
         - path: /
           pathType: ImplementationSpecific

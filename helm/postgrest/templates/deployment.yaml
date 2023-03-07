@@ -31,7 +31,7 @@ spec:
         - name: {{ .Chart.Name }}
           env:
           - name: PGRST_DB_URI
-            value: "postgres://postgres:password@postgresql-dvdrental.milen/dvdrental"
+            value: "postgres://postgres:password@postgresql-dvdrental.postgui/dvdrental"
           - name: PGRST_SERVER_PORT
             value: "80"
           - name: PGRST_DB_ANON_ROLE
