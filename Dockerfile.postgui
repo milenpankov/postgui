@@ -16,8 +16,9 @@ COPY ./PostGUI ./
 # Run npm build
 RUN npm run build
 
+# syntax=docker/dockerfile:1.4
 # Base nginx image
 FROM nginx:latest
 
 # Copy build files
-COPY --from=build /app/build /usr/share/nginx/html
+COPY --link --from=build /app/build /usr/share/nginx/html
