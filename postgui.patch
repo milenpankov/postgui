@@ -32,7 +32,7 @@ index b5cb26a..91c4c02 100644
      {
        "title": "DVD Rentals",
 -      "url": "http://localhost:3001",
-+      "url": "http://postgrest.pankov.eu",
++      "url": "http://localhost:8083",
        "publicDbAcessType": "read",
        "foreignKeySearch": true,
        "primaryKeyFunction": true,
