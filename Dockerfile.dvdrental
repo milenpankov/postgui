@@ -1,6 +1,9 @@
 # Base image
 FROM postgres:11
 
+# Remove obsoleted stretch pgdg source
+RUN rm /etc/apt/sources.list.d/pgdg.list
+
 # Install needed system tools
 RUN apt-get update && apt-get install -y --no-install-recommends git curl unzip ca-certificates
 
