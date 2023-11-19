@@ -2,7 +2,7 @@
 pipeline {
     agent {
         kubernetes {
-            workspaceVolume persistentVolumeClaimWorkspaceVolume(claimName: "jenkins-workspace", readOnly: false)
+            cloud 'kubernetes'
             yaml """
 kind: Pod
 spec:
