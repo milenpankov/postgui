@@ -24,11 +24,6 @@ spec:
             - '-c'
             - >
               cp /root/.docker-secret/config.json /root/.docker/
-    volumeMounts:
-      - name: docker-secret
-        mountPath: /root/.docker-secret
-      - name: docker-storage
-        mountPath: /var/lib/docker
   - name: jnlp
     image: milenpankov/jenkins-agent:latest
     imagePullPolicy: Always
@@ -37,15 +32,6 @@ spec:
       limits: {}
       requests: {}
     tty: false
-  volumes:
-  - name: docker-secret
-    secret:
-      secretName: milenpankov
-      items:
-        - key: .dockerconfigjson
-          path: config.json
-  - name: docker-storage
-    emptyDir: {}
 """
             defaultContainer 'jnlp'
         }
