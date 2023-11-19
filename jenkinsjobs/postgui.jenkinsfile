@@ -3,36 +3,7 @@ pipeline {
     agent {
         kubernetes {
             cloud 'kubernetes'
-            yaml """
-kind: Pod
-spec:
-  containers:
-  - name: docker-dind
-    image: milenpankov/docker-dind:latest
-    imagePullPolicy: Always
-    workingDir: "/home/jenkins/agent"
-    securityContext:
-        privileged: true
-    args:
-    - "--mtu=1300"
-    - "--storage-driver=overlay2"
-    lifecycle:
-      postStart:
-        exec:
-          command:
-            - '/bin/sh'
-            - '-c'
-            - >
-              cp /root/.docker-secret/config.json /root/.docker/
-  - name: jnlp
-    image: milenpankov/jenkins-agent:latest
-    imagePullPolicy: Always
-    workingDir: "/home/jenkins/agent"
-    resources:
-      limits: {}
-      requests: {}
-    tty: false
-"""
+            inheritFrom 'jnlp-iot-hub-dind'
             defaultContainer 'jnlp'
         }
     }
@@ -66,14 +37,14 @@ spec:
         }
         stage('Build postgui image') {
             steps {
-                container('docker-dind') {
+                container('dind') {
                     sh "DOCKER_BUILDKIT=1 docker buildx build --cache-from type=local,src=`pwd`@cache/postgui --cache-to type=local,mode=max,dest=`pwd`@cache/postgui -t milenpankov/postgui:${env.BUILD_NUMBER} -t milenpankov/postgui:latest --push -f Dockerfile.postgui `pwd`"
                 }
             }
         }
         stage('Build dvdrental image') {
             steps {
-                container('docker-dind') {
+                container('dind') {
                     sh "DOCKER_BUILDKIT=1 docker buildx build --cache-from type=local,src=`pwd`@cache/dvdrental --cache-to type=local,mode=max,dest=`pwd`@cache/dvdrental -t milenpankov/postgresql-dvdrental:${env.BUILD_NUMBER} -t milenpankov/postgresql-dvdrental:latest --push -f Dockerfile.dvdrental `pwd`"
                 }
             }
