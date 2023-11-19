@@ -1,0 +1,114 @@
+#!/usr/bin/env groovy
+pipeline {
+    agent {
+        kubernetes {
+            workspaceVolume persistentVolumeClaimWorkspaceVolume(claimName: "jenkins-workspace", readOnly: false)
+            yaml """
+kind: Pod
+spec:
+  containers:
+  - name: docker-dind
+    image: milenpankov/docker-dind:latest
+    imagePullPolicy: Always
+    workingDir: "/home/jenkins/agent"
+    securityContext:
+        privileged: true
+    args:
+    - "--mtu=1300"
+    - "--storage-driver=overlay2"
+    lifecycle:
+      postStart:
+        exec:
+          command:
+            - '/bin/sh'
+            - '-c'
+            - >
+              cp /root/.docker-secret/config.json /root/.docker/
+    volumeMounts:
+      - name: docker-secret
+        mountPath: /root/.docker-secret
+      - name: docker-storage
+        mountPath: /var/lib/docker
+  - name: jnlp
+    image: milenpankov/jenkins-agent:latest
+    imagePullPolicy: Always
+    workingDir: "/home/jenkins/agent"
+    resources:
+      limits: {}
+      requests: {}
+    tty: false
+  volumes:
+  - name: docker-secret
+    secret:
+      secretName: milenpankov
+      items:
+        - key: .dockerconfigjson
+          path: config.json
+  - name: docker-storage
+    emptyDir: {}
+"""
+            defaultContainer 'jnlp'
+        }
+    }
+    stages {
+        stage('Checkout SCM') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/milenpankov/postgui.git']]])
+            }
+        }
+        stage('Clone PostGUI repository') {
+            steps {
+                script{
+                    def exists = fileExists 'PostGUI'
+                    if (!exists){
+                        new File('PostGUI').mkdir()
+                    }
+                    dir ('PostGUI') {
+                        checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/priyank-purohit/PostGUI.git']]])
+                    }
+                }
+            }
+        }
+        stage ('Configure PostGUI') {
+            steps {
+                script{
+                    dir ('PostGUI') {
+                        sh "git apply ../postgui.patch"
+                    }
+                }
+            }
+        }
+        stage('Build postgui image') {
+            steps {
+                container('docker-dind') {
+                    sh "DOCKER_BUILDKIT=1 docker buildx build --cache-from type=local,src=`pwd`@cache/postgui --cache-to type=local,mode=max,dest=`pwd`@cache/postgui -t milenpankov/postgui:${env.BUILD_NUMBER} -t milenpankov/postgui:latest --push -f Dockerfile.postgui `pwd`"
+                }
+            }
+        }
+        stage('Build dvdrental image') {
+            steps {
+                container('docker-dind') {
+                    sh "DOCKER_BUILDKIT=1 docker buildx build --cache-from type=local,src=`pwd`@cache/dvdrental --cache-to type=local,mode=max,dest=`pwd`@cache/dvdrental -t milenpankov/postgresql-dvdrental:${env.BUILD_NUMBER} -t milenpankov/postgresql-dvdrental:latest --push -f Dockerfile.dvdrental `pwd`"
+                }
+            }
+        }
+        stage('Deploy helm chart to kubernetes') {
+            steps{
+                script {
+                    dir ('helm') {
+                        def postgui = readFile file: "postgui/Chart.yaml"
+                        postgui = postgui.replaceAll("latest", "${env.BUILD_NUMBER}")
+                        writeFile file: "postgui/Chart.yaml", text: postgui
+                        def dvdrental = readFile file: "postgresql-dvdrental/Chart.yaml"
+                        dvdrental = dvdrental.replaceAll("latest", "${env.BUILD_NUMBER}")
+                        writeFile file: "postgresql-dvdrental/Chart.yaml", text: dvdrental
+                        withCredentials([file(credentialsId: 'jenkins-k8s-cli', variable: 'KUBECONFIG')]) {
+                          sh "helm dependency update ./postgui"
+                          sh "helm upgrade --install postgui ./postgui --namespace postgui --create-namespace --wait"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
